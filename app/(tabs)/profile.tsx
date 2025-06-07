@@ -19,7 +19,7 @@ export default function ProfileScreen() {
   const user = {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    avatar: 'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg?auto=compress&cs=tinysrgb&w=600',
+    avatar: 'https://media.tenor.com/CiRwpB1HP98AAAAe/money-money-money.png',
     listsCount: 8,
     completedItemsCount: 124,
   };

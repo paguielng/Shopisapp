@@ -1,6 +1,5 @@
-
 const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:5000/api' 
+  ? 'https://workspace-e4caa02b-1bd5-4ebf-bb9b-9476f29b34bf-00-3oqu3bicem4lo.picard.replit.dev:5000/api' 
   : 'https://your-deployed-backend.replit.app/api';
 
 interface ApiResponse<T> {

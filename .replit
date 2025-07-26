@@ -10,3 +10,19 @@ run = ["sh", "-c", "npm run dev"]
 [[ports]]
 localPort = 8081
 externalPort = 80
+
+[workflows]
+runButton = "Start Full Stack"
+
+[[workflows.workflow]]
+name = "Start Full Stack"
+author = 32541304
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd server && npm install && npm start"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"

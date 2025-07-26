@@ -3,16 +3,18 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { ShoppingBag, User, Mail, Lock, ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       alert('Please fill in all fields');
       return;
@@ -23,13 +25,20 @@ export default function RegisterScreen() {
       return;
     }
 
-    // In a real app, we would register with a backend
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to the main app
-      router.replace('/home');
-    }, 1500);
+    const result = await register(name.trim(), email.trim(), password.trim());
+    setLoading(false);
+
+    if (result.success) {
+      router.replace('/(tabs)/home');
+    } else {
+      alert(result.error || 'Registration failed');
+    }
   };
 
   return (

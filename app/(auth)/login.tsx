@@ -3,26 +3,30 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, KeyboardAvo
 import { useRouter } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { ShoppingBag, Mail, Lock, ArrowRight } from 'lucide-react-native';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       alert('Please enter both email and password');
       return;
     }
 
-    // In a real app, we would authenticate with a backend
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Navigate to the main app
-      router.replace('/home');
-    }, 1000);
+    const result = await login(email.trim(), password.trim());
+    setLoading(false);
+
+    if (result.success) {
+      router.replace('/(tabs)/home');
+    } else {
+      alert(result.error || 'Login failed');
+    }
   };
 
   return (

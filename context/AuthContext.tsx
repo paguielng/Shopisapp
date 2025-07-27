@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService } from '@/services/api';
 
@@ -42,6 +43,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadStoredAuth = async () => {
     try {
+      // Sur le web, nettoyer le stockage pour forcer une nouvelle connexion
+      if (Platform.OS === 'web') {
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('user');
+        setLoading(false);
+        return;
+      }
+
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('user');
 

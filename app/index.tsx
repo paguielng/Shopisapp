@@ -11,13 +11,10 @@ export default function Index() {
 
   useEffect(() => {
     if (!loading) {
-      // Sur le web, toujours rediriger vers la page de connexion initialement
+      // Sur le web (Netlify, Replit), toujours montrer d'abord la page de connexion
       if (Platform.OS === 'web') {
-        if (user) {
-          router.replace('/(tabs)/home');
-        } else {
-          router.replace('/(auth)/login');
-        }
+        // Forcer la redirection vers login, même si un user existe dans le cache
+        router.replace('/(auth)/login');
       } else {
         // Comportement normal pour mobile
         if (user) {

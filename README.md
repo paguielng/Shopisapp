@@ -1,7 +1,7 @@
 # ShoppingListApp
 `Shopy`Application-web cloud de listes de courses multiplateforme pour **Application mobile** **[ShoppingListApp](https://github.com/ShopListApp/ShopisApp/)**. Synchronisation en temps réel, accès depuis tous appareils. `Prototype` du site vitrine : **[Shopis official](https://shopisofficial.netlify.app/)**
 
-## 📲​ Tester l'application (mode développement)
+## 📲​ Tester l'application (version bêta)
 
 Vous pouvez tester l'application en ligne en phase de développement à l'adresse suivante :
 

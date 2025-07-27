@@ -3,5 +3,5 @@
 
 ---
 
-<img src="https://icons.iconarchive.com/icons/graphicloads/100-flat/256/info-icon.png" width="8%" alt="infos icon"/> Pour tester l'application, allez sur ... et utiliser ces identifiants test pour ce connecter.
+<img src="https://icons.iconarchive.com/icons/oxygen-icons.org/oxygen/48/Apps-preferences-desktop-cryptography-icon.png" width="8%" alt="infos icon"/> Pour tester l'application, allez sur ... et utiliser ces identifiants test pour ce connecter.
 

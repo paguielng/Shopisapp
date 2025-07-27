@@ -7,9 +7,10 @@ Vous pouvez tester l'application en ligne en phase de développement à l'adress
 
 **🔗 Accéder à la démo :  [demo.shopis.dev](https://e4caa02b-1bd5-4ebf-bb9b-9476f29b34bf-00-3oqu3bicem4lo.picard.replit.dev)**
 
-### 🔐  Identifiants de connexion (utilisateur de test)
+### 🔐  Identifiants de connexion ou Création de compte (utilisateur de test)
 
 - **Email :** `shopis@app.fr`
 - **Mot de passe :** `1234567890`
+- **Full Name** : `user` *si vous créez un compte test*
 
-> 💡 **Note :** Cette version de développement est hébergée sur [Replit](https://replit.com/) et [Netliy](https://netlify.app/) et permet de tester toutes les fonctionnalités de l'application sans installation.
+> 💡 **Note :** Cette version en développement est hébergée sur **[Replit](https://replit.com/)** et **[Netliy](https://netlify.app/)** et permet de tester toutes les fonctionnalités de l'application sans installation.

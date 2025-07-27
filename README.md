@@ -11,7 +11,6 @@ Vous pouvez tester l'application en ligne en phase de développement à l'adress
 
 - **Email :** `shopis@app.fr`
 - **Mot de passe :** `1234567890`
-- **Full Name** : `user`
-- *si vous créez un compte test*
+- **Full Name** : `user` *(si vous créez un compte test)*
 
 > 💡 **Note :** Cette version en développement est hébergée sur **[Replit](https://replit.com/)** et **[Netliy](https://netlify.app/)** et permet de tester toutes les fonctionnalités de l'application sans installation.

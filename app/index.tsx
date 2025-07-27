@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { COLORS } from '@/constants/theme';
 
@@ -11,10 +11,20 @@ export default function Index() {
 
   useEffect(() => {
     if (!loading) {
-      if (user) {
-        router.replace('/(tabs)/home');
+      // Sur le web, toujours rediriger vers la page de connexion initialement
+      if (Platform.OS === 'web') {
+        if (user) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace('/(auth)/login');
+        }
       } else {
-        router.replace('/(auth)/login');
+        // Comportement normal pour mobile
+        if (user) {
+          router.replace('/(tabs)/home');
+        } else {
+          router.replace('/(auth)/login');
+        }
       }
     }
   }, [user, loading]);

@@ -46,15 +46,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedUser = await AsyncStorage.getItem('user');
 
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        apiService.setToken(storedToken);
-        
-        // Refresh user data
-        await refreshUser();
+        // Vérifier si le token est valide avant de l'utiliser
+        try {
+          const userData = JSON.parse(storedUser);
+          setToken(storedToken);
+          setUser(userData);
+          apiService.setToken(storedToken);
+          
+          // Refresh user data pour vérifier si le token est encore valide
+          await refreshUser();
+        } catch (parseError) {
+          console.error('Error parsing stored user data:', parseError);
+          // Nettoyer les données corrompues
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('user');
+        }
       }
     } catch (error) {
       console.error('Error loading stored auth:', error);
+      // En cas d'erreur, nettoyer le stockage
+      try {
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('user');
+      } catch (cleanupError) {
+        console.error('Error cleaning up storage:', cleanupError);
+      }
     } finally {
       setLoading(false);
     }
@@ -136,9 +152,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.data) {
         setUser(response.data);
         await AsyncStorage.setItem('user', JSON.stringify(response.data));
+      } else if (response.error === 'Invalid token' || response.error === 'Unauthorized') {
+        // Token invalide, déconnecter l'utilisateur
+        await logout();
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
+      // En cas d'erreur réseau ou de token invalide, déconnecter
+      await logout();
     }
   };
 

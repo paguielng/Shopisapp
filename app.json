@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "shopisapp",
-    "slug": "shopisapp",
+    "name": "shopis-expo-nativewind",
+    "slug": "shopis-expo-nativewind",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

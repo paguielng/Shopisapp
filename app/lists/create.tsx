@@ -1,37 +1,44 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Screen } from '@/components/Screen';
 import { Header } from '@/components/Header';
 import { CategorySelector } from '@/components/CategorySelector';
 import { ListPlus, DollarSign } from 'lucide-react-native';
+import { useShoppingLists } from '@/hooks/useShoppingLists';
 
 export default function CreateListScreen() {
   const router = useRouter();
+  const { createList } = useShoppingLists();
   const [listName, setListName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('grocery');
   const [budget, setBudget] = useState('');
   const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateList = () => {
+  const handleCreateList = async () => {
     if (!listName.trim()) {
-      alert('Please enter a list name');
+      Alert.alert('Error', 'Please enter a list name');
       return;
     }
 
-    // In a real app, we would save this to a database
-    const newList = {
-      name: listName,
-      category: selectedCategory,
-      budget: budget ? parseFloat(budget) : 0,
-      note: note,
-    };
+    try {
+      setLoading(true);
+      const newList = await createList({
+        name: listName.trim(),
+        category: selectedCategory,
+        budget: budget ? parseFloat(budget) : 0,
+        note: note.trim() || undefined,
+      });
 
-    console.log('Creating new list:', newList);
-    
-    // Navigate to the new list (for demo, we'll just go to an existing list)
-    router.push('/lists/1');
+      // Navigate to the new list
+      router.replace(`/lists/${newList.id}`);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create list');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +53,7 @@ export default function CreateListScreen() {
             value={listName}
             onChangeText={setListName}
             placeholderTextColor={COLORS.textLight}
+            editable={!loading}
           />
 
           <Text style={styles.label}>Category</Text>
@@ -64,6 +72,7 @@ export default function CreateListScreen() {
               onChangeText={setBudget}
               keyboardType="numeric"
               placeholderTextColor={COLORS.textLight}
+              editable={!loading}
             />
           </View>
 
@@ -77,14 +86,18 @@ export default function CreateListScreen() {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            editable={!loading}
           />
 
           <TouchableOpacity 
-            style={styles.createButton}
+            style={[styles.createButton, loading && styles.createButtonDisabled]}
             onPress={handleCreateList}
+            disabled={loading}
           >
             <ListPlus color="#FFFFFF" size={20} />
-            <Text style={styles.createButtonText}>Create List</Text>
+            <Text style={styles.createButtonText}>
+              {loading ? 'Creating...' : 'Create List'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -179,6 +192,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: SPACING.medium,
+  },
+  createButtonDisabled: {
+    backgroundColor: COLORS.gray,
   },
   createButtonText: {
     color: COLORS.white,

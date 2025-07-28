@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '@/constants/theme';
 
 interface HeaderProps {
   title: string;
@@ -40,21 +40,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 56,
-    backgroundColor: COLORS.white,
-    paddingHorizontal: SPACING.medium,
+    height: 64,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray,
+    borderBottomColor: COLORS.border,
+    ...SHADOWS.small,
   },
   leftContainer: {
     width: 40,
   },
   backButton: {
-    padding: 4,
+    padding: SPACING.xs,
+    borderRadius: 8,
   },
   title: {
-    fontSize: 18,
-    fontFamily: FONTS.semiBold,
+    ...TYPOGRAPHY.h5,
     color: COLORS.text,
     textAlign: 'center',
     flex: 1,

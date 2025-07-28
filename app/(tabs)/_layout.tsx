@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { ShoppingBag, Home, ListChecks, BarChart, User } from 'lucide-react-native';
+import { ShoppingBag, ListChecks, User } from 'lucide-react-native';
 import { COLORS, SPACING } from '@/constants/theme';
+import { WalletIcon } from '@/components/WalletIcon';
+import { HomeIcon } from '@/components/HomeIcon';
 
 export default function TabLayout() {
   return (
@@ -18,7 +20,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
-            <Home color={color} size={size} />
+            <HomeIcon color={color} size={22} />
           ),
         }}
       />
@@ -47,7 +49,7 @@ export default function TabLayout() {
         options={{
           title: 'Budget',
           tabBarIcon: ({ color, size }) => (
-            <BarChart color={color} size={size} />
+            <WalletIcon color={color} size={22} />
           ),
         }}
       />

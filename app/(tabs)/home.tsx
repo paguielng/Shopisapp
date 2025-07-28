@@ -1,36 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ListPlus, ShoppingBag, BarChart4, MicIcon } from 'lucide-react-native';
+import { ListPlus, ShoppingBag, ChartBar as BarChart4, Mic as MicIcon } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { COLORS, FONTS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from '@/constants/theme';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { Screen } from '@/components/Screen';
-
-// Mock data - would come from the backend in a real app
-const recentLists = [
-  { 
-    id: '1', 
-    name: 'Weekly Groceries', 
-    itemCount: 12, 
-    completedCount: 5, 
-    totalBudget: 85.50, 
-    spentAmount: 35.20,
-    icon: 'grocery',
-    createdAt: new Date(Date.now() - 86400000) // 1 day ago
-  },
-  { 
-    id: '2', 
-    name: 'Party Supplies', 
-    itemCount: 8, 
-    completedCount: 0, 
-    totalBudget: 120.00, 
-    spentAmount: 0,
-    icon: 'party',
-    createdAt: new Date(Date.now() - 172800000) // 2 days ago
-  },
-];
+import { useShoppingLists } from '@/hooks/useShoppingLists';
 
 const categories = [
   { id: '1', name: 'Groceries', icon: 'grocery' },
@@ -43,16 +20,10 @@ const categories = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [userName, setUserName] = useState('Shopper');
+  const { lists, loading, error, refetch } = useShoppingLists();
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Simulate loading data
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const userName = 'Alex';
 
   const handleAddList = () => {
     router.push('/lists/create');
@@ -63,12 +34,27 @@ export default function HomeScreen() {
     alert('Voice recognition feature coming soon!');
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  // Get recent lists (last 3)
+  const recentLists = lists.slice(0, 3);
+
   return (
     <Screen>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hello, {userName}!</Text>
-          <Text style={styles.subGreeting}>Let's manage your shopping</Text>
+          <Text style={styles.greeting}>Bonjour, {userName} 👋</Text>
+          <Text style={styles.subGreeting}>Gérons vos courses intelligemment</Text>
         </View>
 
         <View style={styles.quickActionsContainer}>
@@ -79,7 +65,7 @@ export default function HomeScreen() {
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.primary }]}>
               <ListPlus color="#FFFFFF" size={24} />
             </View>
-            <Text style={styles.quickActionText}>New List</Text>
+            <Text style={styles.quickActionText}>Nouvelle Liste</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -89,7 +75,7 @@ export default function HomeScreen() {
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.secondary }]}>
               <ShoppingBag color="#FFFFFF" size={24} />
             </View>
-            <Text style={styles.quickActionText}>All Lists</Text>
+            <Text style={styles.quickActionText}>Mes Listes</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -109,30 +95,64 @@ export default function HomeScreen() {
             <View style={[styles.quickActionIcon, { backgroundColor: COLORS.accent }]}>
               <MicIcon color="#FFFFFF" size={24} />
             </View>
-            <Text style={styles.quickActionText}>Voice</Text>
+            <Text style={styles.quickActionText}>Vocal</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Recent Lists</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Listes Récentes</Text>
+            {lists.length > 3 && (
+              <TouchableOpacity onPress={() => router.push('/lists')}>
+                <Text style={styles.seeAllText}>Voir tout</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           
           {loading ? (
-            <ActivityIndicator color={COLORS.primary} size="large" style={styles.loader} />
-          ) : (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color={COLORS.primary} size="large" />
+              <Text style={styles.loadingText}>Chargement de vos listes...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+                <Text style={styles.retryButtonText}>Réessayer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : recentLists.length > 0 ? (
             <>
               {recentLists.map(list => (
                 <ShoppingListCard 
                   key={list.id} 
-                  list={list} 
+                  list={{
+                    id: list.id,
+                    name: list.name,
+                    itemCount: list.itemCount,
+                    completedCount: list.completedCount,
+                    totalBudget: list.budget || 0,
+                    spentAmount: list.totalCost,
+                    icon: list.category,
+                    createdAt: new Date(list.created_at),
+                  }}
                   onPress={() => router.push(`/lists/${list.id}`)} 
                 />
               ))}
             </>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>Aucune liste pour le moment</Text>
+              <Text style={styles.emptyStateText}>Créez votre première liste de courses</Text>
+              <TouchableOpacity style={styles.createFirstListButton} onPress={handleAddList}>
+                <Text style={styles.createFirstListText}>Créer ma première liste</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
         
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Categories</Text>
+          <Text style={styles.sectionTitle}>Catégories</Text>
           
           <View style={styles.categoriesContainer}>
             {categories.map(category => (
@@ -141,7 +161,7 @@ export default function HomeScreen() {
                 style={styles.categoryItem}
                 onPress={() => router.push(`/lists/category/${category.id}`)}
               >
-                <CategoryIcon name={category.icon} size={32} />
+                <CategoryIcon name={category.icon} size={28} />
                 <Text style={styles.categoryName}>{category.name}</Text>
               </TouchableOpacity>
             ))}
@@ -158,54 +178,125 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    paddingVertical: SPACING.large,
-    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    marginBottom: SPACING.md,
   },
   greeting: {
-    fontSize: 24,
-    fontFamily: FONTS.bold,
+    ...TYPOGRAPHY.h2,
     color: COLORS.text,
+    marginBottom: SPACING.xs,
   },
   subGreeting: {
-    fontSize: 16,
-    fontFamily: FONTS.regular,
-    color: COLORS.textLight,
-    marginTop: 4,
+    ...TYPOGRAPHY.body1,
+    color: COLORS.textSecondary,
   },
   quickActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.medium,
-    marginBottom: SPACING.large,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   quickActionButton: {
     alignItems: 'center',
+    flex: 1,
+    marginHorizontal: SPACING.xs,
   },
   quickActionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
+    width: 56,
+    height: 56,
+    borderRadius: BORDER_RADIUS.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
+    ...SHADOWS.medium,
   },
   quickActionText: {
-    fontSize: 12,
-    fontFamily: FONTS.medium,
+    ...TYPOGRAPHY.caption,
     color: COLORS.text,
+    textAlign: 'center',
   },
   sectionContainer: {
-    marginBottom: SPACING.large,
-    paddingHorizontal: SPACING.medium,
+    marginBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: FONTS.semiBold,
+    ...TYPOGRAPHY.h4,
     color: COLORS.text,
-    marginBottom: SPACING.medium,
   },
-  loader: {
-    marginVertical: SPACING.large,
+  seeAllText: {
+    ...TYPOGRAPHY.label,
+    color: COLORS.primary,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  loadingText: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  errorContainer: {
+    backgroundColor: COLORS.error + '10',
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.error + '20',
+  },
+  errorText: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  retryButton: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  retryButtonText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
+    fontSize: 14,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.small,
+  },
+  emptyStateTitle: {
+    ...TYPOGRAPHY.h5,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  emptyStateText: {
+    ...TYPOGRAPHY.body2,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  createFirstListButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    ...SHADOWS.medium,
+  },
+  createFirstListText: {
+    ...TYPOGRAPHY.button,
+    color: COLORS.white,
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -214,22 +305,19 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     width: '30%',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: SPACING.small,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     alignItems: 'center',
-    marginBottom: SPACING.medium,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: SPACING.md,
+    ...SHADOWS.small,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   categoryName: {
-    marginTop: 4,
-    fontSize: 12,
-    fontFamily: FONTS.medium,
+    ...TYPOGRAPHY.caption,
     color: COLORS.text,
     textAlign: 'center',
+    marginTop: SPACING.xs,
   },
 });

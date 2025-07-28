@@ -1,141 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, FlatList, Alert, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Screen } from '@/components/Screen';
 import { Header } from '@/components/Header';
 import { ShoppingListItem } from '@/components/ShoppingListItem';
 import { Plus, Share2, Trash2, DollarSign } from 'lucide-react-native';
-
-// Mock data - would come from a database in a real application
-const mockItems = [
-  { id: '1', name: 'Milk', quantity: 2, price: 3.99, completed: false, category: 'Dairy' },
-  { id: '2', name: 'Bread', quantity: 1, price: 2.49, completed: true, category: 'Bakery' },
-  { id: '3', name: 'Eggs', quantity: 1, price: 4.99, completed: false, category: 'Dairy' },
-  { id: '4', name: 'Apples', quantity: 5, price: 0.99, completed: false, category: 'Produce' },
-  { id: '5', name: 'Chicken Breast', quantity: 1, price: 8.99, completed: false, category: 'Meat' },
-  { id: '6', name: 'Pasta', quantity: 2, price: 1.49, completed: true, category: 'Dry Goods' },
-  { id: '7', name: 'Tomatoes', quantity: 3, price: 0.79, completed: false, category: 'Produce' },
-  { id: '8', name: 'Coffee', quantity: 1, price: 9.99, completed: false, category: 'Beverages' },
-];
-
-const mockLists = [
-  { 
-    id: '1', 
-    name: 'Weekly Groceries', 
-    items: mockItems,
-    totalBudget: 85.50,
-    icon: 'grocery',
-    createdAt: new Date(Date.now() - 86400000) // 1 day ago
-  },
-  { 
-    id: '2', 
-    name: 'Party Supplies', 
-    items: mockItems.slice(0, 3),
-    totalBudget: 120.00,
-    icon: 'party',
-    createdAt: new Date(Date.now() - 172800000) // 2 days ago
-  },
-];
+import { useShoppingListDetail } from '@/hooks/useShoppingListDetail';
 
 export default function ShoppingListDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [list, setList] = useState<any>(null);
+  const listId = Array.isArray(id) ? id[0] : id;
+  
+  const { list, loading, error, refetch, addItem, updateItem, toggleItem, deleteItem } = useShoppingListDetail(listId);
   const [newItem, setNewItem] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [showCompleted, setShowCompleted] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // In a real app, we would fetch the list from a database
-    const foundList = mockLists.find(l => l.id === id);
-    if (foundList) {
-      setList(foundList);
-    }
-  }, [id]);
-
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!newItem.trim()) return;
 
-    const newItemObj = {
-      id: Math.random().toString(),
-      name: newItem,
-      quantity: 1,
-      price: 0,
-      completed: false,
-      category: 'Other'
-    };
-
-    setList({
-      ...list,
-      items: [...list.items, newItemObj]
-    });
-
-    setNewItem('');
-    setIsAdding(false);
+    try {
+      await addItem({
+        name: newItem.trim(),
+        quantity: 1,
+        price: 0,
+        category: 'Other'
+      });
+      setNewItem('');
+      setIsAdding(false);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
   };
 
-  const handleToggleItem = (itemId: string) => {
-    const updatedItems = list.items.map((item: any) => 
-      item.id === itemId ? { ...item, completed: !item.completed } : item
+  const handleToggleItem = async (itemId: string) => {
+    try {
+      await toggleItem(itemId);
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    Alert.alert(
+      'Delete Item',
+      'Are you sure you want to delete this item?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteItem(itemId);
+            } catch (error: any) {
+              Alert.alert('Error', error.message);
+            }
+          }
+        }
+      ]
     );
-
-    setList({
-      ...list,
-      items: updatedItems
-    });
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    const updatedItems = list.items.filter((item: any) => item.id !== itemId);
-
-    setList({
-      ...list,
-      items: updatedItems
-    });
+  const handleUpdateItemQuantity = async (itemId: string, quantity: number) => {
+    try {
+      await updateItem(itemId, { quantity });
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
   };
 
-  const handleUpdateItemQuantity = (itemId: string, quantity: number) => {
-    const updatedItems = list.items.map((item: any) => 
-      item.id === itemId ? { ...item, quantity } : item
-    );
-
-    setList({
-      ...list,
-      items: updatedItems
-    });
-  };
-
-  const handleUpdateItemPrice = (itemId: string, price: number) => {
-    const updatedItems = list.items.map((item: any) => 
-      item.id === itemId ? { ...item, price } : item
-    );
-
-    setList({
-      ...list,
-      items: updatedItems
-    });
-  };
-
-  const calculateTotalCost = () => {
-    if (!list?.items?.length) return 0;
-    
-    return list.items.reduce((total: number, item: any) => {
-      return total + (item.price * item.quantity);
-    }, 0);
+  const handleUpdateItemPrice = async (itemId: string, price: number) => {
+    try {
+      await updateItem(itemId, { price });
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+    }
   };
 
   const handleShare = () => {
-    alert('Share functionality would go here');
+    Alert.alert('Share', 'Share functionality would go here');
   };
 
   const handleDeleteList = () => {
-    // In a real app, we would delete the list from a database
-    alert('Delete list functionality would go here');
-    router.back();
+    Alert.alert(
+      'Delete List',
+      'Are you sure you want to delete this entire shopping list?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            // In a real app, we would delete the list from a database
+            Alert.alert('Success', 'List deleted successfully');
+            router.back();
+          }
+        }
+      ]
+    );
   };
 
-  if (!list) {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  if (loading && !list) {
     return (
       <Screen>
         <Header title="Loading..." showBackButton />
@@ -146,14 +121,35 @@ export default function ShoppingListDetailScreen() {
     );
   }
 
+  if (error && !list) {
+    return (
+      <Screen>
+        <Header title="Error" showBackButton />
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!list) {
+    return (
+      <Screen>
+        <Header title="Not Found" showBackButton />
+        <View style={styles.centered}>
+          <Text>Shopping list not found</Text>
+        </View>
+      </Screen>
+    );
+  }
+
   // Filter items based on the showCompleted state
   const displayItems = showCompleted 
     ? list.items 
     : list.items.filter((item: any) => !item.completed);
-
-  // Calculate completed and total counts
-  const completedCount = list.items.filter((item: any) => item.completed).length;
-  const totalCount = list.items.length;
 
   return (
     <Screen>
@@ -176,7 +172,7 @@ export default function ShoppingListDetailScreen() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Progress</Text>
             <Text style={styles.summaryValue}>
-              {completedCount}/{totalCount} items
+              {list.completedCount}/{list.itemCount} items
             </Text>
           </View>
           
@@ -184,7 +180,7 @@ export default function ShoppingListDetailScreen() {
             <View 
               style={[
                 styles.progressFill, 
-                { width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }
+                { width: `${list.itemCount > 0 ? (list.completedCount / list.itemCount) * 100 : 0}%` }
               ]} 
             />
           </View>
@@ -193,7 +189,7 @@ export default function ShoppingListDetailScreen() {
             <Text style={styles.summaryLabel}>Total Cost</Text>
             <View style={styles.costContainer}>
               <DollarSign size={16} color={COLORS.primary} />
-              <Text style={styles.summaryValue}>${calculateTotalCost().toFixed(2)}</Text>
+              <Text style={styles.summaryValue}>${list.totalCost.toFixed(2)}</Text>
             </View>
           </View>
           
@@ -202,8 +198,8 @@ export default function ShoppingListDetailScreen() {
               style={[
                 styles.budgetFill, 
                 { 
-                  width: `${Math.min((calculateTotalCost() / list.totalBudget) * 100, 100)}%`,
-                  backgroundColor: calculateTotalCost() > list.totalBudget ? COLORS.error : COLORS.success
+                  width: `${Math.min((list.totalCost / (list.budget || 1)) * 100, 100)}%`,
+                  backgroundColor: list.totalCost > (list.budget || 0) ? COLORS.error : COLORS.success
                 }
               ]} 
             />
@@ -211,7 +207,7 @@ export default function ShoppingListDetailScreen() {
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Budget</Text>
-            <Text style={styles.summaryValue}>${list.totalBudget.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>${(list.budget || 0).toFixed(2)}</Text>
           </View>
         </View>
         
@@ -268,6 +264,9 @@ export default function ShoppingListDetailScreen() {
               />
             )}
             contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
           />
         ) : (
           <View style={styles.emptyState}>
@@ -290,6 +289,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: SPACING.medium,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontFamily: FONTS.medium,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: SPACING.medium,
+  },
+  retryButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: COLORS.white,
+    fontFamily: FONTS.medium,
+    fontSize: 14,
   },
   headerButtons: {
     flexDirection: 'row',

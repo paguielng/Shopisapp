@@ -8,11 +8,9 @@ import {
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { Screen } from '@/components/Screen';
 import { Header } from '@/components/Header';
-import { useAuth } from '@/context/AuthContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { logout } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
@@ -26,14 +24,9 @@ export default function ProfileScreen() {
     completedItemsCount: 124,
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.replace('/(auth)/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      alert('Erreur lors de la déconnexion');
-    }
+  const handleLogout = () => {
+    // In a real app, we would log the user out
+    alert('Logout functionality would go here');
   };
 
   const renderSettingItem = (

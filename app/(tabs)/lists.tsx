@@ -1,87 +1,53 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, TextInput } from 'react-native';
-import { Router, useRouter } from 'expo-router';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Plus, Search, Filter } from 'lucide-react-native';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
 import { Screen } from '@/components/Screen';
 import { Header } from '@/components/Header';
-
-// Mock data - would come from the backend in a real app
-const mockLists = [
-  { 
-    id: '1', 
-    name: 'Weekly Groceries', 
-    itemCount: 12, 
-    completedCount: 5, 
-    totalBudget: 85.50, 
-    spentAmount: 35.20,
-    icon: 'grocery',
-    createdAt: new Date(Date.now() - 86400000) // 1 day ago
-  },
-  { 
-    id: '2', 
-    name: 'Party Supplies', 
-    itemCount: 8, 
-    completedCount: 0, 
-    totalBudget: 120.00, 
-    spentAmount: 0,
-    icon: 'party',
-    createdAt: new Date(Date.now() - 172800000) // 2 days ago
-  },
-  { 
-    id: '3', 
-    name: 'Office Supplies', 
-    itemCount: 5, 
-    completedCount: 3, 
-    totalBudget: 50.00, 
-    spentAmount: 30.45,
-    icon: 'other',
-    createdAt: new Date(Date.now() - 259200000) // 3 days ago
-  },
-  { 
-    id: '4', 
-    name: 'Home Improvement', 
-    itemCount: 15, 
-    completedCount: 10, 
-    totalBudget: 250.00, 
-    spentAmount: 175.60,
-    icon: 'household',
-    createdAt: new Date(Date.now() - 604800000) // 7 days ago
-  },
-  { 
-    id: '5', 
-    name: 'Electronics', 
-    itemCount: 3, 
-    completedCount: 1, 
-    totalBudget: 500.00, 
-    spentAmount: 199.99,
-    icon: 'electronics',
-    createdAt: new Date(Date.now() - 1209600000) // 14 days ago
-  },
-];
+import { useShoppingLists } from '@/hooks/useShoppingLists';
 
 export default function ListsScreen() {
   const router = useRouter();
+  const { lists, loading, error, refetch } = useShoppingLists();
   const [searchQuery, setSearchQuery] = useState('');
-  const [shoppingLists, setShoppingLists] = useState(mockLists);
-  const [filteredLists, setFilteredLists] = useState(mockLists);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    if (text) {
-      const filtered = shoppingLists.filter(list => 
-        list.name.toLowerCase().includes(text.toLowerCase())
-      );
-      setFilteredLists(filtered);
-    } else {
-      setFilteredLists(shoppingLists);
-    }
   };
 
   const handleCreateList = () => {
     router.push('/lists/create');
   };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  // Filter lists based on search query
+  const filteredLists = lists.filter(list => 
+    list.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderListItem = ({ item }: { item: any }) => (
+    <ShoppingListCard 
+      list={{
+        id: item.id,
+        name: item.name,
+        itemCount: item.itemCount,
+        completedCount: item.completedCount,
+        totalBudget: item.budget || 0,
+        spentAmount: item.totalCost,
+        icon: item.category,
+        createdAt: new Date(item.created_at),
+      }}
+      onPress={() => router.push(`/lists/${item.id}`)} 
+    />
+  );
 
   return (
     <Screen>
@@ -102,27 +68,42 @@ export default function ListsScreen() {
             <Filter size={20} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         
         <FlatList
           data={filteredLists}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ShoppingListCard 
-              list={item} 
-              onPress={() => router.push(`/lists/${item.id}`)} 
-            />
-          )}
+          renderItem={renderListItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           ListEmptyComponent={
             <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateText}>No shopping lists found</Text>
-              <TouchableOpacity 
-                style={styles.createButton}
-                onPress={handleCreateList}
-              >
-                <Text style={styles.createButtonText}>Create a new list</Text>
-              </TouchableOpacity>
+              {loading ? (
+                <Text style={styles.emptyStateText}>Loading your lists...</Text>
+              ) : searchQuery ? (
+                <Text style={styles.emptyStateText}>No lists found matching "{searchQuery}"</Text>
+              ) : (
+                <>
+                  <Text style={styles.emptyStateText}>No shopping lists found</Text>
+                  <TouchableOpacity 
+                    style={styles.createButton}
+                    onPress={handleCreateList}
+                  >
+                    <Text style={styles.createButtonText}>Create a new list</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           }
         />
@@ -181,6 +162,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.lightGray,
   },
+  errorContainer: {
+    backgroundColor: COLORS.error + '15',
+    padding: SPACING.medium,
+    borderRadius: 8,
+    marginBottom: SPACING.medium,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: COLORS.error,
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: SPACING.small,
+  },
+  retryButton: {
+    backgroundColor: COLORS.error,
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: COLORS.white,
+    fontFamily: FONTS.medium,
+    fontSize: 14,
+  },
   listContent: {
     paddingBottom: 80, // Space for the FAB
   },
@@ -194,6 +200,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     color: COLORS.textLight,
     marginBottom: SPACING.medium,
+    textAlign: 'center',
   },
   createButton: {
     backgroundColor: COLORS.primary,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, BORDER_RADIUS } from '@/constants/theme';
 import { CategoryIcon } from './CategoryIcon';
 import { formatDistanceToNow } from '@/utils/dateUtils';
 
@@ -33,39 +33,34 @@ export function ShoppingListCard({ list, onPress }: ShoppingListCardProps) {
     return COLORS.success;
   };
 
+  const getCompletionStatusColor = () => {
+    if (completionPercentage === 100) return COLORS.success;
+    if (completionPercentage > 50) return COLORS.primary;
+    return COLORS.textLight;
+  };
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.headerRow}>
         <View style={styles.iconContainer}>
-          <CategoryIcon name={list.icon} size={24} />
+          <CategoryIcon name={list.icon} size={28} />
         </View>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{list.name}</Text>
           <Text style={styles.date}>{formatDistanceToNow(list.createdAt)}</Text>
         </View>
-      </View>
-      
-      <View style={styles.progressContainer}>
-        <View style={styles.progressLabelContainer}>
-          <Text style={styles.progressLabel}>Progress</Text>
-          <Text style={styles.progressValue}>{list.completedCount}/{list.itemCount}</Text>
-        </View>
-        
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { width: `${completionPercentage}%` }
-            ]} 
-          />
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>
+            {list.completedCount}/{list.itemCount}
+          </Text>
         </View>
       </View>
       
       <View style={styles.progressContainer}>
         <View style={styles.progressLabelContainer}>
-          <Text style={styles.progressLabel}>Budget</Text>
-          <Text style={styles.progressValue}>
-            ${list.spentAmount.toFixed(2)} / ${list.totalBudget.toFixed(2)}
+          <Text style={styles.progressLabel}>Progression</Text>
+          <Text style={[styles.progressValue, { color: getCompletionStatusColor() }]}>
+            {Math.round(completionPercentage)}%
           </Text>
         </View>
         
@@ -74,83 +69,112 @@ export function ShoppingListCard({ list, onPress }: ShoppingListCardProps) {
             style={[
               styles.progressFill, 
               { 
-                width: `${Math.min(budgetPercentage, 100)}%`,
-                backgroundColor: getBudgetStatusColor(),
+                width: `${completionPercentage}%`,
+                backgroundColor: getCompletionStatusColor(),
               }
             ]} 
           />
         </View>
       </View>
+      
+      {list.totalBudget > 0 && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressLabelContainer}>
+            <Text style={styles.progressLabel}>Budget</Text>
+            <Text style={[styles.progressValue, { color: getBudgetStatusColor() }]}>
+              {list.spentAmount.toFixed(0)}€ / {list.totalBudget.toFixed(0)}€
+            </Text>
+          </View>
+          
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { 
+                  width: `${Math.min(budgetPercentage, 100)}%`,
+                  backgroundColor: getBudgetStatusColor(),
+                }
+              ]} 
+            />
+          </View>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: SPACING.medium,
-    marginBottom: SPACING.medium,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    ...SHADOWS.medium,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   headerRow: {
     flexDirection: 'row',
-    marginBottom: SPACING.medium,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.md,
     backgroundColor: COLORS.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SPACING.small,
+    marginRight: SPACING.md,
   },
   titleContainer: {
     flex: 1,
-    justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
-    fontFamily: FONTS.semiBold,
+    ...TYPOGRAPHY.h6,
     color: COLORS.text,
-    marginBottom: 2,
+    marginBottom: SPACING.xs,
   },
   date: {
-    fontSize: 12,
-    fontFamily: FONTS.regular,
-    color: COLORS.textLight,
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textTertiary,
+  },
+  statusBadge: {
+    backgroundColor: COLORS.backgroundLight,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+  },
+  statusText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   progressContainer: {
-    marginBottom: SPACING.small,
+    marginBottom: SPACING.md,
   },
   progressLabelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
   },
   progressLabel: {
-    fontSize: 14,
-    fontFamily: FONTS.medium,
-    color: COLORS.textLight,
+    ...TYPOGRAPHY.body2,
+    color: COLORS.textSecondary,
   },
   progressValue: {
-    fontSize: 14,
-    fontFamily: FONTS.medium,
+    ...TYPOGRAPHY.label,
     color: COLORS.text,
   },
   progressBar: {
     height: 6,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 3,
+    backgroundColor: COLORS.backgroundLight,
+    borderRadius: BORDER_RADIUS.xs,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.primary,
-    borderRadius: 3,
+    borderRadius: BORDER_RADIUS.xs,
   },
 });
